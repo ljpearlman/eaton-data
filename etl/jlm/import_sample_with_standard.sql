@@ -9,12 +9,12 @@ update report_file f
    set report_id = r.report_id from report r
        where r.report_name = regexp_replace(f.file_name, '/[^/]*$', '');
 
-create temporary table t_scope (like scope);
-alter table t_scope drop column report_id;
-copy t_scope from :'fn' with csv;
+create temporary table t_sample (like sample);
+alter table t_sample drop column report_id;
+copy t_sample from :'fn' with csv header;
 
-insert into scope(report_id, attr_name, attr_value)
-   select r.report_id, t.attr_name, t.attr_value
-   from report_file r join t_scope t
+insert into sample(report_id, report_sample_id, location_name, material, result)
+   select r.report_id, t.report_sample_id, t.location_name, t.material, t.result
+   from report_file r join t_sample t
    on r.file_name = :'fn'
 ;   

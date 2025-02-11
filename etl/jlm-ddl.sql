@@ -1,5 +1,5 @@
-create schema jlm_raw;
-set search_path = jlm_raw;
+create schema raw_jlm;
+set search_path = raw_jlm;
 
 create table report (
    report_id serial primary key,
@@ -26,7 +26,7 @@ create table scope (
    primary key(report_id, attr_name)   
 );
 
-create table locations (
+create table location (
    report_id integer not null references report(report_id),
    location_name text not null,
    location_comments text,
@@ -40,11 +40,24 @@ create table area_inclusion (
    primary key(report_id, area_name)
 );
 
-create table samples (
+create table sample (
    report_id integer not null references report(report_id),
    report_sample_id text not null,
-   location_name text,
+   contaminant text,   
+   location text,
    material text,
    result text,
-   primary key(report_id, report_sample_id)
+   regulated_level text,   
+   concentration text,
+   friable text,
+   condition text,
+   primary key(report_id, report_sample_id, location)
 );   
+
+create table standard (
+   report_id integer not null references report(report_id),
+   contaminant text not null,
+   surface text not null,
+   max_value text,
+   primary key(report_id, contaminant, surface)
+);

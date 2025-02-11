@@ -9,12 +9,12 @@ update report_file f
    set report_id = r.report_id from report r
        where r.report_name = regexp_replace(f.file_name, '/[^/]*$', '');
 
-create temporary table t_scope (like scope);
-alter table t_scope drop column report_id;
-copy t_scope from :'fn' with csv;
+create temporary table t_area_inclusion (like area_inclusion);
+alter table t_area_inclusion drop column report_id;
+copy t_area_inclusion from :'fn' with csv;
 
-insert into scope(report_id, attr_name, attr_value)
-   select r.report_id, t.attr_name, t.attr_value
-   from report_file r join t_scope t
+insert into area_inclusion(report_id, area_name, area_included)
+   select r.report_id, t.area_name, t.area_included
+   from report_file r join t_area_inclusion t
    on r.file_name = :'fn'
 ;   

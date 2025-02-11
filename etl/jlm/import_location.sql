@@ -9,13 +9,12 @@ update report_file f
    set report_id = r.report_id from report r
        where r.report_name = regexp_replace(f.file_name, '/[^/]*$', '');
 
-create temporary table t_property_info (like property_info);
-alter table t_property_info drop column report_id;
-copy t_property_info from :'fn' with csv header;
+create temporary table t_location (like location);
+alter table t_location drop column report_id;
+copy t_location from :'fn' with csv;
 
-insert into property_info(report_id, attr_name, attr_value)
-   select f.report_id, t.attr_name, t.attr_value
-   from report_file f join t_property_info t
-   on f.file_name = :'fn';
-   
-;
+insert into location(report_id, location_name, location_comments)
+   select r.report_id, t.location_name, t.location_comments
+   from report_file r join t_location t
+   on r.file_name = :'fn'
+;   
