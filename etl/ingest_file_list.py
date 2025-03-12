@@ -11,4 +11,4 @@ def main(dirpath):
             print(f"{file.name},{m.group(1)}")
 
 if __name__ == '__main__':
-    main('data/Test_Results_REDACTED')
+    main('../efru/data/Test_Results_REDACTED')
