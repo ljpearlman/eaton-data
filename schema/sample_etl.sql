@@ -44,7 +44,8 @@ select
    s.analysis_method,
    s.prep_method
 from t_sample s
-join report_file f on s.report_file = f.file_name;
+join report_file f on s.report_file = f.file_name
+on conflict do nothing;
 
 create temporary table t_result (
    report_file text not null,
@@ -63,7 +64,7 @@ insert into vocab.substance(name)
 ;
 
 insert into vocab.unit(name)
-  select distinct units from t_result where units is not null
+  select distinct unit from t_result where unit is not null
   on conflict do nothing
 ;
 
