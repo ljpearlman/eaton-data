@@ -20,7 +20,10 @@ class SampleFile:
         "reporting_limit"
     ]
     
-    def __init__(self, report_file, result_dir="./processed", original_filename = None):
+    def __init__(self, report_file, result_dir=None, original_filename = None):
+        if result_dir is None:
+            result_dir = Path(report_file).parent / 'processed'
+        result_dir.mkdir(exist_ok=True)
         if original_filename is None:
             original_filename = re.sub('(.*/)?(tabula-)?(.*).csv', r'\3.pdf', report_file)
         self.original_filename = original_filename
