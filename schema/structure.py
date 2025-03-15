@@ -7,7 +7,7 @@ def main(host, catalog_id):
     catalog = ErmrestCatalog.connect(server, catalog_id)
     model = catalog.getCatalogModel()
     schema = model.schemas["efru_data"]
-#    schema = model.create_schema({"schema_name": "efru_data"})
+#    Schema = model.create_schema({"schema_name": "efru_data"})
 
     schema.create_table(Table.define(
         "structure",
