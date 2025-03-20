@@ -31,6 +31,16 @@ def main(host, catalog_id):
         ]))
 
     schema.create_table(Table.define(
+        "collection_method",
+        [
+            Column.define("name", builtin_types.text, nullok=False),
+            Column.define("description", builtin_types.text)
+        ],
+        key_defs = [
+            Key.define(["name"])
+        ]))
+    
+    schema.create_table(Table.define(
         "substance",
         [
             Column.define("name", builtin_types.text, nullok=False),
@@ -65,7 +75,8 @@ def main(host, catalog_id):
             Column.define("collection_date", builtin_types.date),
             Column.define("location", builtin_types.text),
             Column.define("analysis_method", builtin_types.text),
-            Column.define("prep_method", builtin_types.text)
+            Column.define("prep_method", builtin_types.text),
+            Column.define("collection_method", builtin_types.text)
         ],
         key_defs = [
             Key.define(["report_file", "sample_id"])
@@ -76,7 +87,9 @@ def main(host, catalog_id):
             ForeignKey.define(
                 ["analysis_method"], "vocab", "analysis_method", ["name"]),
             ForeignKey.define(
-                ["prep_method"], "vocab", "prep_method", ["name"])
+                ["prep_method"], "vocab", "prep_method", ["name"]),
+            ForeignKey.define(
+                ["collection_method"], "vocab", "collection_method", ["name"])
             ]
         ))
 

@@ -31,13 +31,13 @@ def main(file, original_filename):
         result.write()        
         result = Result(sample, {
             "substance": "Ash",
-            "measurement": row[3],
+            "measurement": row[4],
             "units": '%'
         })
         result.write()
         result = Result(sample, {
             "substance": "Soot",
-            "measurement": row[3],
+            "measurement": row[5],
             "units": '%'
         })
         result.write()

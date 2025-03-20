@@ -7,7 +7,8 @@ create temporary table t_sample (
     collection_date text,
     location text,
     analysis_method text,
-    prep_method text
+    prep_method text,
+    sample_method text
 );
 
 \copy t_sample from '/tmp/sample.csv' with csv header
@@ -33,7 +34,8 @@ insert into sample (
    collection_date,
    location,
    analysis_method,
-   prep_method
+   prep_method,
+   sample_method
 )
 select
    f."RID",
@@ -42,7 +44,8 @@ select
    s.collection_date::date,
    s.location,
    s.analysis_method,
-   s.prep_method
+   s.prep_method,
+   s.sample_method
 from t_sample s
 join report_file f on s.report_file = f.file_name
 on conflict do nothing;

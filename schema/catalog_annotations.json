@@ -1,0 +1,102 @@
+{
+    "tag:isrd.isi.edu,2018:indexing-preferences": {
+        "btree": true,
+        "gin_array": true,
+        "trgm": true
+    },
+    "tag:isrd.isi.edu,2019:chaise-config": {
+        "headTitle": "Eaton Fire Toxicity Data",
+        "navbarBrandText": "Eaton Fire Toxicity Data",
+        "navbarMenu": {
+	    "children": [
+		{
+		    "name": "Data",
+		    "children": [
+			{
+			    "name": "Structure",
+			    "url": "/chaise/recordset/#1/efru_data:structure"
+			},
+			{
+			    "name": "Sample",
+			    "url": "/chaise/recordset/#1/efru_data:sample"
+			},
+			{
+			    "name": "Result",
+			    "url": "/chaise/recordset/#1/efru_data:result"
+			},
+			{
+			    "name": "Report File",
+			    "url": "/chaise/recordset/#1/efru_data:report_file"
+			},
+			{
+			    "name": "Testing Company",
+			    "url": "/chaise/recordset/#1/efru_data:testing_company"
+			},
+			{
+			    "name": "Lab",
+			    "url": "/chaise/recordset/#1/efru_data:lab"
+			}
+			
+		    ]
+		},
+		{
+		    "name": "Term Lists",
+		    "children": [
+			{
+			    "name": "Damage",
+			    "url": "/chaise/recordset/#1/vocab:damage"
+			},			
+			{
+			    "name": "Distance",
+			    "url": "/chaise/recordset/#1/vocab:distance"
+			},
+			{
+			    "name": "Insurance",
+			    "url": "/chaise/recordset/#1/vocab:insurance"
+			},
+			{
+			    "name": "Remediation Status",
+			    "url": "/chaise/recordset/#1/vocab:remediation_status"
+			},
+			{
+			    "name": "Substance",
+			    "url": "/chaise/recordset/#1/vocab:substance"
+			},
+			{
+			    "name": "Substance Category",
+			    "url": "/chaise/recordset/#1/vocab:substance_category"
+			},			
+			{
+			    "name": "Unit",
+			    "url": "/chaise/recordset/#1/vocab:unit"
+			},
+			{
+			    "name": "Collection Method",
+			    "url": "/chaise/recordset/#1/vocab:collection_method"
+			},
+			{
+			    "name": "Preparation Method",
+			    "url": "/chaise/recordset/#1/vocab:prep_method"
+			},
+			{
+			    "name": "Analysis Method",
+			    "url": "/chaise/recordset/#1/vocab:analysis_method"
+			}
+		    ]
+		}
+	    ],
+            "newTab": false
+        },
+        "systemColumnsDisplayCompact": [
+            "RID"
+        ],
+        "systemColumnsDisplayEntry": [
+            "RID"
+        ]
+    },
+    "tag:misd.isi.edu,2015:display": {
+        "name_style": {
+            "underline_space": true
+        }
+    }
+}

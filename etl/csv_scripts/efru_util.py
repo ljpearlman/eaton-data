@@ -4,6 +4,30 @@ import sys
 from pathlib import Path
 import re
 
+def row_to_tokens(row, ignore_strings = ['', ':']):
+    result = []
+    for col in row:
+        val = col.strip()
+        if val not in ignore_strings:
+            result.append(val)
+    return result
+
+def after_colon(string):
+    return string.split(':')[1].strip()
+
+def fill_elements(cols, element_map, result_map):
+    i = 0
+    while i < len(cols):
+        for k in element_map.keys():
+            if cols[i] in (k, k + ':'):
+                i = i + 1
+                result_map[element_map[k]] = cols[i]
+            elif cols[i].startswith(k):
+                result_map[element_map[k]] = after_colon(cols[i])
+        i = i+1
+    return(result_map)
+            
+
 class SampleFile:
     base_headers = ["report_file", "sample_id"]
     sample_headers = [
@@ -11,7 +35,8 @@ class SampleFile:
         "collection_date",
         "location",
         "analysis_method",
-        "prep_method"
+        "prep_method",
+        "sample_method"
     ]
     result_headers = [
         "substance",
@@ -45,7 +70,8 @@ class SampleFile:
 
     def write_result_row(self, row):
         row["report_file"] = self.original_filename
-        self.result_writer.writerow(row)        
+        self.result_writer.writerow(row)
+
 
 class Sample(OrderedDict):
     def __init__(self, sample_file, sample_id, sample_attrs):
@@ -64,6 +90,13 @@ class Sample(OrderedDict):
         row["sample_id"] = self["sample_id"]
         self.sample_file.write_result_row(row)
 
+    @classmethod
+    def fill_elements(cls, cols, element_map, result_map):
+        for k in element_map.values():
+            if k not in SampleFile.sample_headers:
+                raise ValueError(f'{k} is not a recognized Sample header')
+        return fill_elements(cols, element_map, result_map)
+
 
 class Result(OrderedDict):
     def __init__(self, sample, result_attrs):
@@ -76,3 +109,10 @@ class Result(OrderedDict):
 
     def write(self):
         self.sample.write_result_row(self)
+
+    def fill_elements(cls, cols, element_map, result_map):
+        for k in element_map.values():
+            if k not in SampleFile.result_headers:
+                raise ValueError(f'{k} is not a recognized Result header')
+
+        return fill_elements(cols, element_map, result_map)
