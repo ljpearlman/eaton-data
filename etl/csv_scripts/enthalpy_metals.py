@@ -27,25 +27,26 @@ def main(file, original_filename):
     sample_file.write_sample_header()
     sample_file.write_result_header()
     
-    in_heades=True
+    in_headers=True
     sample_attrs = {}
     result_attrs = {}
 
     for row in reader:
-        cols = row_to_tokens(row)
         sample_element_map = {
             'Lab ID': 'lab_id',
             'Collected': 'collection_date',
             'Matrix': 'sample_method',
             'Prep Method': 'prep_method'
         }
-        if cols[0].startswith('Sample ID'):
+        if row[0].lstrip().startswith('Sample ID'):
+            cols = row_to_tokens(row)            
             in_headers = True
             sample_id=after_colon(cols[0])
             sample_attrs = Sample.fill_elements(cols[1:], sample_element_map, {})
             sample_attrs['location'] = sample_id
 
         elif in_headers:
+            cols = row_to_tokens(row)            
             if cols[0].startswith('Matrix'):
                 sample_attrs = Sample.fill_elements(cols, sample_element_map, sample_attrs)
             elif cols[0].startswith('Method'):
@@ -57,6 +58,7 @@ def main(file, original_filename):
                 in_headers = False                
 
         else:
+            cols = row_to_tokens(row, split_on_whitespace=True)
             result_attrs = {
                 'substance' : cols[0],
                 'measurement' : cols[1],

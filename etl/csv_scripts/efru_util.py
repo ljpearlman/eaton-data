@@ -4,12 +4,16 @@ import sys
 from pathlib import Path
 import re
 
-def row_to_tokens(row, ignore_strings = ['', ':']):
+def row_to_tokens(row, ignore_strings = ['', ':'], split_on_whitespace = False):
     result = []
     for col in row:
-        val = col.strip()
-        if val not in ignore_strings:
-            result.append(val)
+        if split_on_whitespace:
+            vals = col.split()
+        else:
+            vals = [col.strip()]
+        for val in vals:
+            if val not in ignore_strings:
+                result.append(val)
     return result
 
 def after_colon(string):
@@ -36,7 +40,7 @@ class SampleFile:
         "location",
         "analysis_method",
         "prep_method",
-        "sample_method"
+        "collection_method"
     ]
     result_headers = [
         "substance",
