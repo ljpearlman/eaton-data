@@ -9,7 +9,7 @@ def main(host, catalog_id):
     schema = model.schemas["vocab"]
 
     schema.create_table(Table.define(
-        "analysis_method",
+        "lab_method",
         [
             Column.define("name", builtin_types.text, nullok=False),
             Column.define("description", builtin_types.text),
@@ -110,6 +110,33 @@ def main(host, catalog_id):
             ForeignKey.define(["substance"], "vocab", "substance", ["name"]),
             ForeignKey.define(["unit"], "vocab", "unit", ["name"])
             ]))
+
+    schema.create_table(Table.define(
+        "sample_lab_method",
+        [
+            Column.define("sample", builtin_types.text, nullok=False),
+            Column.define("lab_method", builtin_types.text, nullok=False),
+        ],
+        key_defs = [
+            Key.define(["sample", "lab_method"])
+        ],
+        fkey_defs = [
+            ForeignKey.define(["sample"], "efru_data", "sample", ["RID"]),
+            ForeignKey.define(["lab_method"], "vocab", "lab_method", ["name"])
+        ]
+    ))
+
+    schema.create_table(Table.define(
+        "file_format",
+        [
+            Column.define("name", builtin_types.text, nullok=False),
+            Column.define("description", builtin_types.text, nullok=False)
+        ],
+        key_defs = [
+            Key.define(["name"])
+        ]
+    ))
+    
 
 if __name__ == "__main__":
     cli=BaseCLI("Define structure table", None, 1, hostname_required=True, config_file_required=False)
