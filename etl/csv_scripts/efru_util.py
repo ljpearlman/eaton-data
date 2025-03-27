@@ -19,6 +19,15 @@ def row_to_tokens(row, ignore_strings = ['', ':'], split_on_whitespace = False):
 def after_colon(string):
     return string.split(':')[1].strip()
 
+def debug_cols(row):
+    i = 0
+    for col in row:
+        print(f'{i}: {col}')
+        i = i + 1
+
+def is_empty(str):
+    return str is None or str == ''
+
 def fill_elements(cols, element_map, result_map):
     i = 0
     while i < len(cols):
