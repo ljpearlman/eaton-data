@@ -54,7 +54,8 @@ def main(file, original_filename, date, collection_method):
                     'collection_date': date,
                     'location': location,
                     'lab_id': row[lab_col],
-                    'lab_methods': lab_method
+                    'lab_methods': lab_method,
+                    'collection_method': collection_method
                 })
                 sample.write()
                 result = Result(sample, {
