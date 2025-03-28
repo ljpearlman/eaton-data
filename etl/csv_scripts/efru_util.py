@@ -47,8 +47,7 @@ class SampleFile:
         "lab_id",
         "collection_date",
         "location",
-        "analysis_method",
-        "prep_method",
+        "lab_methods",
         "collection_method"
     ]
     result_headers = [
