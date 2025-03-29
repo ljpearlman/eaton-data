@@ -20,17 +20,6 @@ def main(host, catalog_id):
         ]))
 
     schema.create_table(Table.define(
-        "prep_method",
-        [
-            Column.define("name", builtin_types.text, nullok=False),
-            Column.define("description", builtin_types.text),
-            Column.define("url", builtin_types.text)
-        ],
-        key_defs = [
-            Key.define(["name"])
-        ]))
-
-    schema.create_table(Table.define(
         "collection_method",
         [
             Column.define("name", builtin_types.text, nullok=False),
@@ -135,6 +124,34 @@ def main(host, catalog_id):
         key_defs = [
             Key.define(["name"])
         ]
+    ))
+
+    schema.create_table(Table.define(
+        "data_step",
+        [
+            Column.define("report_file", builtin_types.text, nullok=False),
+            Column.define("report_type", builtin_types.text, nullok=False),            
+            Column.define("method", builtin_types.text, nullok=False),
+            Column.define("source_format", builtin_types.text),
+            Column.define("dest_format", builtin_types.text),
+            Column.define("url", builtin_types.text),            
+            Column.define("comments", builtin_types.text)
+        ],
+        key_defs = [
+            Key.define(["report_file", "report_type", "method", "url"])
+        ],
+        fkey_defs = [
+            ForeignKey.define(
+                ["report_file"], "efru_data", "report_file", ["RID"]),
+            ForeignKey.define(
+                ["report_type"], "vocab", "report_type", ["name"]),
+            ForeignKey.define(
+                ["method"], "vocab", "data_method", ["name"]),            
+            ForeignKey.define(
+                ["source_format"], "vocab", "file_format", ["name"]),
+            ForeignKey.define(
+                ["dest_format"], "vocab", "file_format", ["name"])
+        ]        
     ))
     
 
