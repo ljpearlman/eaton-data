@@ -57,8 +57,7 @@ class SampleFile:
         "reporting_limit"
     ]
 
-    recognized_headers = base_headers + sample_headers + result_headers
-    
+  
     def __init__(self, report_file, result_dir=None, original_filename = None):
         if result_dir is None:
             result_dir = Path(report_file).parent / 'processed'
@@ -86,8 +85,22 @@ class SampleFile:
         row["report_file"] = self.original_filename
         self.result_writer.writerow(row)
 
-    @classmethod
-    def find_column_numbers(cls, label_map, row):
+    @staticmethod
+    def find_column(regexp, row):
+        i = 0
+        for col in row:
+            if re.match(regexp, col):
+                return i
+            i = i + 1
+        return -1
+
+class ColumnNumbers:
+    recognized_headers = SampleFile.base_headers + SampleFile.sample_headers + SampleFile.result_headers
+    
+    def __init__(self):
+        self.cn = {}
+        
+    def set_column_numbers(self, label_map, row):
         # label_map is of the form:
         #    { column_name : [list_of regexes] }
         # row should be a header row
@@ -95,26 +108,23 @@ class SampleFile:
         #     that's assumed to be the column associated with that column name
 
         for key in label_map.keys():
-            if key not in cls.recognized_headers:
+            if key not in self.recognized_headers:
                 raise ValueError(f'Unrecognized column "{key}"')
 
-        column_numbers = {}
         i = 0
         for col in row:
             for key in label_map.keys():
                 for regex in label_map[key]:
                     if re.match(regex, col):
-                        column_numbers[key] = i
+                        self.cn[key] = i
             i = i + 1
-        return column_numbers
+            
+    def get(self, label):
+        return self.cn.get(label) if self.cn.get(label) is not None else -1
 
-    @staticmethod
-    def find_column(regexp, row):
-        for col in row:
-            if re.match(regexp, col):
-                return col
-        return None
-
+    def set(self, label, val):
+        self.cn[label] = val
+        
 
 class Sample(OrderedDict):
     def __init__(self, sample_file, sample_id, sample_attrs):

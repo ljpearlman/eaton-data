@@ -1,5 +1,5 @@
 import argparse
-from efru_util import SampleFile, Sample, Result, row_to_tokens, after_colon, debug_cols, is_empty
+from efru_util import SampleFile, Sample, Result, row_to_tokens, after_colon, debug_cols, is_empty, ColumnNumbers
 import csv
 import json
 import sys
@@ -42,71 +42,74 @@ def main(file, original_filename, collection_date):
             
         if re.match('HEAVY.*METALS.*IN.*SOIL.*', row[0]):
             collection_method = 'Soil'
-            cn = {}
+            cn = ColumnNumbers()
             continue
         elif re.match('HEAVY.*METALS.*IN.*DUST.*', row[0]):
             collection_method = 'Dust'
-            cn = {}            
+            cn = ColumnNumbers()
             continue
         elif re.match('.*Lead Dust Wipe Results.*', row[0]):
             substance = 'Lead'
             collection_method = 'Dust'
-            cn = {}            
+            cn = ColumnNumbers()
             continue
 
         if collection_method == 'Soil':
-            scol = SampleFile.find_column('Sample .*', row)
-            if scol:
-                sample_id = normalize_sample_id(scol.split()[1], collection_method)
+            sample_id_col = SampleFile.find_column('Sample .*', row)
+            if sample_id_col >= 0:
+                sample_id = normalize_sample_id(row[sample_id_col].split()[1], collection_method)
                 sample_attrs = {
-                    'location': scol.split(' ', 2)[2],
+                    'location': row[sample_id_col].split(' ', 2)[2],
                     'collection_method': collection_method,
                     'collection_date': collection_date
                 }
                 sample = Sample(sample_file, sample_id, sample_attrs)
                 sample.write()
 
-            elif not cn.get('measurement'):
-                cn = SampleFile.find_column_numbers({
+            elif cn.get('measurement') < 0:
+                cn.set_column_numbers({
                     'substance': ['Heavy Metals Element.*'],
                     'reporting_limit': ['Detection Limit.*'],
                     'measurement': ['Results.*']
                 }, row)
-                if cn.get('substance') != cn['substance']:
-                    print("substance col mismatch")
-                if cn.get('reporting_limit') != cn['reporting_limit']:
-                    print("reporting_limit col mismatch")
-                if cn.get('measurement') != cn['measurement']:
-                    print("measurement col mismatch")
-                units = re.sub('Results *\((.*)\)', r'\1', row[cn['measurement']])
+                cn.set('sample_id', sample_id_col)
+                units = re.sub('Results *\((.*)\)', r'\1', row[cn.get('measurement')])
 
-            elif is_empty(row[cn['substance']]) \
-                 or row[cn['substance']].startswith('*NOTE') \
-                 or row[cn['substance']].startswith('Heavy Metals Element'):
+            elif is_empty(row[cn.get('substance')]) \
+                 or row[cn.get('substance')].startswith('*NOTE') \
+                 or row[cn.get('substance')].startswith('Heavy Metals Element'):
                 pass
             else:
                 result_attrs = {
-                    'substance': 'Copper' if row[cn['substance']] == 'Coooer' else row[cn['substance']],
-                    'reporting_limit': row[cn['reporting_limit']],
+                    'substance': fix_substance(row[cn.get('substance')]),
+                    'reporting_limit': row[cn.get('reporting_limit')],
                     'units': units,
-                    'measurement': row[cn['measurement']]
+                    'measurement': row[cn.get('measurement')]
                 }
                 result = Result(sample, result_attrs)
                 result.write()
         elif collection_method == 'Dust':
-            # confusing because substance column in header is the same as
-            # sample id column in body
-            if not is_empty(row[D_SUBST_COL]) and is_empty(row[D_MEAS_COL]):
-                result_attrs = {
-                    'substance': 'Copper' if row[D_SUBST_COL] == 'Coooer' else row[D_SUBST_COL]
-                }
+            if cn.get('substance') == -1:
+                cn.set('substance', SampleFile.find_column('.*', row))
+            else:
+                if cn.get('sample_id') < 0:
+                    cn.set_column_numbers ({
+                        'sample_id': ['Sample.*'],
+                        'measurement': ['Results.*'],
+                        'reporting_limit': ['Reporting Limit.*']
+                    }, row)
+                    
+            if cn.get('substance') >= 0 and (cn.get('measurement') < 0 or is_empty(row[cn.get('measurement')])):
+                result_attrs = {'substance': fix_substance(row[cn.get('substance')])}
                 units = None
-            elif row[D_SAMP_COL].startswith('*NOTE'):
+            elif cn.get('measurement') >= 0 and row[cn.get('measurement')].startswith('Results'):
+                units = fix_units(row[cn.get('measurement')])                
+            elif cn.get('sample_id') >= 0 and row[cn.get('sample_id')].startswith('*NOTE'):
                 pass
-            elif row[D_MEAS_COL].startswith('Results'):
-                units = fix_units(row[D_MEAS_COL])
-            elif row[D_SAMP_COL] and row[D_MEAS_COL] and row[D_RL_COL]:
-                (sample_id, location) = row[D_SAMP_COL].split('-', 1)
+            elif cn.get('sample_id') >= 0 and cn.get('measurement') >= 0 and \
+                 row[cn.get('sample_id')] and row[cn.get('measurement')] \
+                 and row[cn.get('reporting_limit')]:
+                (sample_id, location) = row[cn.get('sample_id')].split('-', 1)
                 sample_id = normalize_sample_id(sample_id, collection_method)
                 sample = dust_samples.get(sample_id)
                 if sample is None:
@@ -116,8 +119,8 @@ def main(file, original_filename, collection_date):
                         'collection_date': collection_date
                     })
                     dust_samples[sample_id] = sample
-                result_attrs['measurement'] = row[D_MEAS_COL]
-                result_attrs['reporting_limit'] = row[D_RL_COL]
+                result_attrs['measurement'] = row[cn.get('measurement')]
+                result_attrs['reporting_limit'] = row[cn.get('reporting_limit')]
                 result_attrs['units'] = units
                 result = Result(sample, result_attrs)
                 result.write()
@@ -130,6 +133,9 @@ def normalize_sample_id(sample_id, collection_method):
 
 def fix_units(results_string):
     return re.sub('Results *\((.*)\)', r'\1', results_string)
+
+def fix_substance(substance):
+    return 'Copper' if substance == 'Coooer' else substance
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
