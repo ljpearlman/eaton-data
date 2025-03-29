@@ -39,7 +39,7 @@ def fill_elements(cols, element_map, result_map):
                 result_map[element_map[k]] = after_colon(cols[i])
         i = i+1
     return(result_map)
-            
+
 
 class SampleFile:
     base_headers = ["report_file", "sample_id"]
@@ -56,6 +56,8 @@ class SampleFile:
         "units",
         "reporting_limit"
     ]
+
+    recognized_headers = base_headers + sample_headers + result_headers
     
     def __init__(self, report_file, result_dir=None, original_filename = None):
         if result_dir is None:
@@ -83,6 +85,35 @@ class SampleFile:
     def write_result_row(self, row):
         row["report_file"] = self.original_filename
         self.result_writer.writerow(row)
+
+    @classmethod
+    def find_column_numbers(cls, label_map, row):
+        # label_map is of the form:
+        #    { column_name : [list_of regexes] }
+        # row should be a header row
+        # for each column in <row>, if that string matches one of the regexes in a list,
+        #     that's assumed to be the column associated with that column name
+
+        for key in label_map.keys():
+            if key not in cls.recognized_headers:
+                raise ValueError(f'Unrecognized column "{key}"')
+
+        column_numbers = {}
+        i = 0
+        for col in row:
+            for key in label_map.keys():
+                for regex in label_map[key]:
+                    if re.match(regex, col):
+                        column_numbers[key] = i
+            i = i + 1
+        return column_numbers
+
+    @staticmethod
+    def find_column(regexp, row):
+        for col in row:
+            if re.match(regexp, col):
+                return col
+        return None
 
 
 class Sample(OrderedDict):
@@ -128,3 +159,4 @@ class Result(OrderedDict):
                 raise ValueError(f'{k} is not a recognized Result header')
 
         return fill_elements(cols, element_map, result_map)
+
