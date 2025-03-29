@@ -6,11 +6,11 @@ import sys
 import re
 
 # Columns for soil section
-S_SAMP_COL = 1
-S_LOC_COL = S_SAMP_COL
-S_SUBST_COL = 1
-S_RL_COL = S_SUBST_COL + 15
-S_MEAS_COL = S_SUBST_COL + 28
+# S_SAMP_COL = 1
+# S_LOC_COL = S_SAMP_COL
+# S_SUBST_COL = 1
+# S_RL_COL = S_SUBST_COL + 15
+# S_MEAS_COL = S_SUBST_COL + 28
 
 # Columns for dust section
 D_SAMP_COL = 7
@@ -30,6 +30,7 @@ def main(file, original_filename, collection_date):
     sample_attrs = {}
     result_attrs = {}
     dust_samples = {}
+    substance = None
     
     while True:
         try:
@@ -41,31 +42,54 @@ def main(file, original_filename, collection_date):
             
         if re.match('HEAVY.*METALS.*IN.*SOIL.*', row[0]):
             collection_method = 'Soil'
+            cn = {}
             continue
         elif re.match('HEAVY.*METALS.*IN.*DUST.*', row[0]):
             collection_method = 'Dust'
+            cn = {}            
+            continue
+        elif re.match('.*Lead Dust Wipe Results.*', row[0]):
+            substance = 'Lead'
+            collection_method = 'Dust'
+            cn = {}            
             continue
 
         if collection_method == 'Soil':
-            if row[S_SAMP_COL].startswith('Sample'):
-                sample_id = normalize_sample_id(row[S_SAMP_COL].split()[1], collection_method)
+            scol = SampleFile.find_column('Sample .*', row)
+            if scol:
+                sample_id = normalize_sample_id(scol.split()[1], collection_method)
                 sample_attrs = {
-                    'location': row[S_LOC_COL].split(' ', 2)[2],
+                    'location': scol.split(' ', 2)[2],
                     'collection_method': collection_method,
                     'collection_date': collection_date
                 }
                 sample = Sample(sample_file, sample_id, sample_attrs)
                 sample.write()
-            elif row[S_SAMP_COL].startswith('Heavy'):
-                units = re.sub('Results *\((.*)\)', r'\1', row[S_MEAS_COL])                
-            elif is_empty(row[S_SAMP_COL]) or row[1].startswith('*NOTE'):
+
+            elif not cn.get('measurement'):
+                cn = SampleFile.find_column_numbers({
+                    'substance': ['Heavy Metals Element.*'],
+                    'reporting_limit': ['Detection Limit.*'],
+                    'measurement': ['Results.*']
+                }, row)
+                if cn.get('substance') != cn['substance']:
+                    print("substance col mismatch")
+                if cn.get('reporting_limit') != cn['reporting_limit']:
+                    print("reporting_limit col mismatch")
+                if cn.get('measurement') != cn['measurement']:
+                    print("measurement col mismatch")
+                units = re.sub('Results *\((.*)\)', r'\1', row[cn['measurement']])
+
+            elif is_empty(row[cn['substance']]) \
+                 or row[cn['substance']].startswith('*NOTE') \
+                 or row[cn['substance']].startswith('Heavy Metals Element'):
                 pass
             else:
                 result_attrs = {
-                    'substance': 'Copper' if row[S_SUBST_COL] == 'Coooer' else row[S_SUBST_COL],
-                    'reporting_limit': row[S_RL_COL],
+                    'substance': 'Copper' if row[cn['substance']] == 'Coooer' else row[cn['substance']],
+                    'reporting_limit': row[cn['reporting_limit']],
                     'units': units,
-                    'measurement': row[S_MEAS_COL]
+                    'measurement': row[cn['measurement']]
                 }
                 result = Result(sample, result_attrs)
                 result.write()
