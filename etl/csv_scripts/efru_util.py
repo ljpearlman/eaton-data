@@ -101,15 +101,16 @@ class ColumnNumbers:
     def __init__(self):
         self.cn = {}
         
-    def set_column_numbers(self, label_map, row):
+    def set_column_numbers(self, label_map, row, extra_keys = []):
         # label_map is of the form:
         #    { column_name : [list_of regexes] }
         # row should be a header row
         # for each column in <row>, if that string matches one of the regexes in a list,
         #     that's assumed to be the column associated with that column name
+        # extra_keys are keys in label_map that will not be validated against standard keys
 
         for key in label_map.keys():
-            if key not in self.recognized_headers:
+            if key not in self.recognized_headers and key not in extra_keys:
                 raise ValueError(f'Unrecognized column "{key}"')
 
         i = 0
@@ -120,8 +121,11 @@ class ColumnNumbers:
                         self.cn[key] = i
             i = i + 1
             
-    def get(self, label):
+    def number(self, label):
         return self.cn.get(label) if self.cn.get(label) is not None else -1
+
+    def value(self, label, row):
+        return row[self.number(label)] if self.number(label) >= 0 else ''
 
     def set(self, label, val):
         self.cn[label] = val

@@ -5,21 +5,6 @@ import json
 import sys
 import re
 
-# Columns for soil section
-# S_SAMP_COL = 1
-# S_LOC_COL = S_SAMP_COL
-# S_SUBST_COL = 1
-# S_RL_COL = S_SUBST_COL + 15
-# S_MEAS_COL = S_SUBST_COL + 28
-
-# Columns for dust section
-D_SAMP_COL = 7
-D_LOC_COL = D_SAMP_COL
-D_SUBST_COL = 7
-D_MEAS_COL = D_SAMP_COL + 13
-D_RL_COL = D_MEAS_COL + 6
-
-
 def main(file, original_filename, collection_date):
     reader = csv.reader(open(file))
     sample_file = SampleFile(file, original_filename = original_filename)
@@ -72,25 +57,25 @@ def main(file, original_filename, collection_date):
                 sample = Sample(sample_file, sample_id, sample_attrs)
                 sample.write()
 
-            elif cn.get('measurement') < 0:
+            elif cn.number('measurement') < 0:
                 cn.set_column_numbers({
                     'substance': ['Heavy Metals Element.*'],
                     'reporting_limit': ['Detection Limit.*'],
                     'measurement': ['Results.*']
                 }, row)
                 cn.set('sample_id', sample_id_col)
-                units = re.sub('Results *\((.*)\)', r'\1', row[cn.get('measurement')])
+                units = re.sub('Results *\((.*)\)', r'\1', cn.value('measurement', row))
 
-            elif is_empty(row[cn.get('substance')]) \
-                 or row[cn.get('substance')].startswith('*NOTE') \
-                 or row[cn.get('substance')].startswith('Heavy Metals Element'):
+            elif is_empty(cn.value('substance', row)) \
+                 or cn.value('substance', row).startswith('*NOTE') \
+                 or cn.value('substance', row).startswith('Heavy Metals Element'):
                 pass
             else:
                 result_attrs = {
-                    'substance': fix_substance(row[cn.get('substance')]),
-                    'reporting_limit': row[cn.get('reporting_limit')],
+                    'substance': fix_substance(cn.value('substance', row)),
+                    'reporting_limit': cn.value('reporting_limit', row),
                     'units': units,
-                    'measurement': row[cn.get('measurement')]
+                    'measurement': cn.value('measurement', row)
                 }
                 result = Result(sample, result_attrs)
                 result.write()
@@ -115,31 +100,31 @@ def main(file, original_filename, collection_date):
                     cn.set('substance', substance_col)
 
                 units = None
-                if cn.get('sample_id') < 0 or row[cn.get('sample_id')].startswith('Sample # - Location'):
+                if cn.number('sample_id') < 0 or cn.value('sample_id', row).startswith('Sample # - Location'):
                     cn.set_column_numbers ({
                         'sample_id': ['Sample.*'],
                         'measurement': ['Results.*'],
                         'reporting_limit': ['Reporting Limit.*']
                     }, row)
                     
-                    if cn.get('sample_id') >= 0:
-                        if cn.get('measurement') < 0:
+                    if cn.number('sample_id') >= 0:
+                        if cn.number('measurement') < 0:
                             # terrible hack - assume the previous column numbers are still good
                             cn = prev_cn
                         in_dust_header = False
-                        if row[cn.get('measurement')].startswith('Results'):
-                            units = fix_units(row[cn.get('measurement')])
-                        elif re.match('.*Results.*', row[cn.get('sample_id')]):
-                            units = fix_units(row[cn.get('sample_id')])
+                        if cn.value('measurement', row).startswith('Results'):
+                            units = fix_units(cn.value('measurement', row))
+                        elif re.match('.*Results.*', cn.value('sample_id', row)):
+                            units = fix_units(cn.value('sample_id', row))
                         
             else:
-                if row[cn.get('sample_id')] and row[cn.get('reporting_limit')]:
+                if cn.value('sample_id', row) and cn.value('reporting_limit', row):
                     # Terrible hack - sometimes measurement is one column late
-                    meas_col = cn.get('measurement')
+                    meas_col = cn.number('measurement')
                     if not row[meas_col]:
                         meas_col = meas_col + 1
                     if row[meas_col]:
-                        (sample_id, location) = row[cn.get('sample_id')].split('-', 1)
+                        (sample_id, location) = cn.value('sample_id', row).split('-', 1)
                         sample_id = normalize_sample_id(sample_id, collection_method)
                         sample = dust_samples.get(sample_id)
                         if sample is None:
@@ -151,18 +136,18 @@ def main(file, original_filename, collection_date):
                             dust_samples[sample_id] = sample
 
                         result_attrs['measurement'] = row[meas_col]
-                        result_attrs['reporting_limit'] = row[cn.get('reporting_limit')]
+                        result_attrs['reporting_limit'] = cn.value('reporting_limit', row)
                         result_attrs['units'] = units
                         result = Result(sample, result_attrs)
                         result.write()
-                elif cn.get('sample_id') >= 0 and row[cn.get('sample_id')].startswith('*NOTE'):
+                elif cn.value('sample_id', row).startswith('*NOTE'):
                     prev_cn = cn
                     cn = ColumnNumbers()
                     in_dust_header = True
                     result_attrs = {}
                     
         elif format == 'Dust-2':
-            if cn.get('sample_id') < 0:
+            if cn.number('sample_id') < 0:
                 cn.set_column_numbers({
                     'sample_id': ['Sample#'],
                     'location': ['Location'],
@@ -172,14 +157,14 @@ def main(file, original_filename, collection_date):
                 format = None
             else:
                 sample = Sample(sample_file,
-                                row[cn.get('sample_id')],
+                                cn.value('sample_id', row),
                                 {
-                                    'location': row[cn.get('location')],
+                                    'location': cn.value('location', row),
                                     'collection_method': collection_method,
                                     'collection_date': collection_date
                                 })
                 sample.write()
-                m = re.match('(<?[0-9.]+) *(.*)', row[cn.get('measurement')])
+                m = re.match('(<?[0-9.]+) *(.*)', cn.value('measurement', row))
                 result = Result(sample, {
                     'substance': 'Lead',
                     'measurement': m.groups()[0],
