@@ -47,6 +47,8 @@ def main(file, original_filename, collection_date):
         elif re.match('HEAVY.*METALS.*IN.*DUST.*', row[0]):
             collection_method = 'Dust'
             cn = ColumnNumbers()
+            prev_cn = cn
+            in_dust_header = True
             continue
         elif re.match('.*Lead Dust Wipe Results.*', row[0]):
             substance = 'Lead'
@@ -88,42 +90,73 @@ def main(file, original_filename, collection_date):
                 }
                 result = Result(sample, result_attrs)
                 result.write()
+                
         elif collection_method == 'Dust':
-            if cn.get('substance') == -1:
-                cn.set('substance', SampleFile.find_column('.*', row))
-            else:
-                if cn.get('sample_id') < 0:
+            # Format is:
+            #    <substance>
+            # then
+            #    ,.., "Sample # - Location",.., "Results (<units>)",..,"Reporting limit (<units>),..
+            # or
+            #    ,.., "Sample # - Location  I Results (<units>) I Reporting limit (<units>),..
+            # then multiple
+            #   Sample #<number> - <location>,..,<result>,..,<reporting_limit>,..
+            # then
+            # *Note.*
+            
+            if in_dust_header:
+                substance_col = SampleFile.find_column('.+', row)
+                if row[substance_col] and not row[substance_col].startswith('Sample') \
+                   and not is_empty(row[substance_col]):
+                    result_attrs = {'substance': fix_substance(row[substance_col])}
+                    cn.set('substance', substance_col)
+
+                units = None
+                if cn.get('sample_id') < 0 or row[cn.get('sample_id')].startswith('Sample # - Location'):
                     cn.set_column_numbers ({
                         'sample_id': ['Sample.*'],
                         'measurement': ['Results.*'],
                         'reporting_limit': ['Reporting Limit.*']
                     }, row)
                     
-            if cn.get('substance') >= 0 and (cn.get('measurement') < 0 or is_empty(row[cn.get('measurement')])):
-                result_attrs = {'substance': fix_substance(row[cn.get('substance')])}
-                units = None
-            elif cn.get('measurement') >= 0 and row[cn.get('measurement')].startswith('Results'):
-                units = fix_units(row[cn.get('measurement')])                
-            elif cn.get('sample_id') >= 0 and row[cn.get('sample_id')].startswith('*NOTE'):
-                pass
-            elif cn.get('sample_id') >= 0 and cn.get('measurement') >= 0 and \
-                 row[cn.get('sample_id')] and row[cn.get('measurement')] \
-                 and row[cn.get('reporting_limit')]:
-                (sample_id, location) = row[cn.get('sample_id')].split('-', 1)
-                sample_id = normalize_sample_id(sample_id, collection_method)
-                sample = dust_samples.get(sample_id)
-                if sample is None:
-                    sample = Sample(sample_file, sample_id, {
-                        'location': location,
-                        'collection_method': collection_method,
-                        'collection_date': collection_date
-                    })
-                    dust_samples[sample_id] = sample
-                result_attrs['measurement'] = row[cn.get('measurement')]
-                result_attrs['reporting_limit'] = row[cn.get('reporting_limit')]
-                result_attrs['units'] = units
-                result = Result(sample, result_attrs)
-                result.write()
+                    if cn.get('sample_id') >= 0:
+                        if cn.get('measurement') < 0:
+                            # terrible hack - assume the previous column numbers are still good
+                            cn = prev_cn
+                        in_dust_header = False
+                        if row[cn.get('measurement')].startswith('Results'):
+                            units = fix_units(row[cn.get('measurement')])
+                        elif re.match('.*Results.*', row[cn.get('sample_id')]):
+                            units = fix_units(row[cn.get('sample_id')])
+                        
+            else:
+                if row[cn.get('sample_id')] and row[cn.get('reporting_limit')]:
+                    # Terrible hack - sometimes measurement is one column late
+                    meas_col = cn.get('measurement')
+                    if not row[meas_col]:
+                        meas_col = meas_col + 1
+                    if row[meas_col]:
+                        (sample_id, location) = row[cn.get('sample_id')].split('-', 1)
+                        sample_id = normalize_sample_id(sample_id, collection_method)
+                        sample = dust_samples.get(sample_id)
+                        if sample is None:
+                            sample = Sample(sample_file, sample_id, {
+                                'location': location,
+                                'collection_method': collection_method,
+                                'collection_date': collection_date
+                            })
+                            dust_samples[sample_id] = sample
+
+                        result_attrs['measurement'] = row[meas_col]
+                        result_attrs['reporting_limit'] = row[cn.get('reporting_limit')]
+                        result_attrs['units'] = units
+                        result = Result(sample, result_attrs)
+                        result.write()
+                elif cn.get('sample_id') >= 0 and row[cn.get('sample_id')].startswith('*NOTE'):
+                    prev_cn = cn
+                    cn = ColumnNumbers()
+                    in_dust_header = True
+                    result_attrs = {}
+
 
 def normalize_sample_id(sample_id, collection_method):
     sample_id = re.sub('Sam.le ?#','',sample_id)
@@ -132,7 +165,7 @@ def normalize_sample_id(sample_id, collection_method):
     return collection_method + '-' + sample_id.strip()
 
 def fix_units(results_string):
-    return re.sub('Results *\((.*)\)', r'\1', results_string)
+    return re.sub('.*Results *\((.*)\).*', r'\1', results_string)
 
 def fix_substance(substance):
     return 'Copper' if substance == 'Coooer' else substance

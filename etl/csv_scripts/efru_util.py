@@ -19,10 +19,11 @@ def row_to_tokens(row, ignore_strings = ['', ':'], split_on_whitespace = False):
 def after_colon(string):
     return string.split(':')[1].strip()
 
-def debug_cols(row):
+def debug_cols(row, all=False):
     i = 0
     for col in row:
-        print(f'{i}: {col}')
+        if all or col:
+            print(f'{i}: {col}')
         i = i + 1
 
 def is_empty(str):
