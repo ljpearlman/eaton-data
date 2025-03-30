@@ -31,6 +31,7 @@ def main(file, original_filename, collection_date):
     result_attrs = {}
     dust_samples = {}
     substance = None
+    format = None
     
     while True:
         try:
@@ -41,22 +42,25 @@ def main(file, original_filename, collection_date):
             return
             
         if re.match('HEAVY.*METALS.*IN.*SOIL.*', row[0]):
+            format = 'Soil'
             collection_method = 'Soil'
             cn = ColumnNumbers()
             continue
         elif re.match('HEAVY.*METALS.*IN.*DUST.*', row[0]):
+            format = 'Dust-1'
             collection_method = 'Dust'
             cn = ColumnNumbers()
             prev_cn = cn
             in_dust_header = True
             continue
-        elif re.match('.*Lead Dust Wipe Results.*', row[0]):
+        elif re.match('(?s).*Lead Dust Wipe Results.*', row[0]):
+            format = 'Dust-2'
             substance = 'Lead'
             collection_method = 'Dust'
             cn = ColumnNumbers()
             continue
 
-        if collection_method == 'Soil':
+        if format == 'Soil':
             sample_id_col = SampleFile.find_column('Sample .*', row)
             if sample_id_col >= 0:
                 sample_id = normalize_sample_id(row[sample_id_col].split()[1], collection_method)
@@ -91,7 +95,7 @@ def main(file, original_filename, collection_date):
                 result = Result(sample, result_attrs)
                 result.write()
                 
-        elif collection_method == 'Dust':
+        elif format == 'Dust-1':
             # Format is:
             #    <substance>
             # then
@@ -156,7 +160,33 @@ def main(file, original_filename, collection_date):
                     cn = ColumnNumbers()
                     in_dust_header = True
                     result_attrs = {}
-
+                    
+        elif format == 'Dust-2':
+            if cn.get('sample_id') < 0:
+                cn.set_column_numbers({
+                    'sample_id': ['Sample#'],
+                    'location': ['Location'],
+                    'measurement': ['Lead Concentration']
+                }, row)
+            elif row[0].startswith('The'):
+                format = None
+            else:
+                sample = Sample(sample_file,
+                                row[cn.get('sample_id')],
+                                {
+                                    'location': row[cn.get('location')],
+                                    'collection_method': collection_method,
+                                    'collection_date': collection_date
+                                })
+                sample.write()
+                m = re.match('(<?[0-9.]+) *(.*)', row[cn.get('measurement')])
+                result = Result(sample, {
+                    'substance': 'Lead',
+                    'measurement': m.groups()[0],
+                    'units': m.groups()[1]
+                })
+                result.write()
+                
 
 def normalize_sample_id(sample_id, collection_method):
     sample_id = re.sub('Sam.le ?#','',sample_id)
