@@ -6,34 +6,25 @@ create temporary table t_sample (
     lab_id text,
     collection_date text,
     location text,
-    analysis_method text,
-    prep_method text,
+    lab_methods text,
     collection_method text
 );
 
 \copy t_sample from '/tmp/sample.csv' with csv header
 
-insert into vocab.analysis_method(name)
-   select distinct analysis_method
+insert into vocab.lab_method(name)
+   select distinct regexp_split_to_table(lab_methods, '\|')
    from t_sample
-   where analysis_method is not null
+   where lab_methods is not null
    on conflict do nothing
 ;   
-
-insert into vocab.prep_method(name)
-   select distinct prep_method
-   from t_sample
-   where prep_method is not null
-   on conflict do nothing
-;
-
 
 insert into vocab.collection_method(name)
    select distinct collection_method
    from t_sample
    where collection_method is not null
    on conflict do nothing
-;
+;   
 
 insert into sample (
    report_file,
@@ -41,8 +32,6 @@ insert into sample (
    lab_id,
    collection_date,
    location,
-   analysis_method,
-   prep_method,
    collection_method
 )
 select
@@ -51,12 +40,21 @@ select
    s.lab_id,
    s.collection_date::date,
    s.location,
-   s.analysis_method,
-   s.prep_method,
    s.collection_method
 from t_sample s
 join report_file f on s.report_file = f.file_name
 on conflict do nothing;
+
+insert into sample_lab_method (
+   sample,
+   lab_method
+) select
+   s."RID",
+   regexp_split_to_table(t.lab_methods, '\|')   
+from sample s
+join report_file f on f."RID" = s.report_file
+join t_sample t on t.report_file = f.file_name
+where t.sample_id = s.sample_id;
 
 create temporary table t_result (
    report_file text not null,

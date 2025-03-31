@@ -29,6 +29,10 @@
 			    "url": "/chaise/recordset/#1/efru_data:report_file"
 			},
 			{
+			    "name": "Data Processing Step",
+			    "url": "/chaise/recordset/#1/efru_data:data_step"
+			},			
+			{
 			    "name": "Testing Company",
 			    "url": "/chaise/recordset/#1/efru_data:testing_company"
 			},
@@ -75,12 +79,12 @@
 			    "url": "/chaise/recordset/#1/vocab:collection_method"
 			},
 			{
-			    "name": "Preparation Method",
-			    "url": "/chaise/recordset/#1/vocab:prep_method"
+			    "name": "Laboratory Processing Method",
+			    "url": "/chaise/recordset/#1/vocab:lab_method"
 			},
 			{
-			    "name": "Analysis Method",
-			    "url": "/chaise/recordset/#1/vocab:analysis_method"
+			    "name": "Data Processing Method",
+			    "url": "/chaise/recordset/#1/vocab:data_method"
 			}
 		    ]
 		}
