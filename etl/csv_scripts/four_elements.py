@@ -12,13 +12,30 @@ def main(file, original_filename, collection_date):
     sample_file.write_sample_header()
     sample_file.write_result_header()
     substance = None
+    in_summary = False
+    location = None
     
     while True:
         try:
             row = reader.__next__()
         except StopIteration:
             return
-            
+
+        if in_summary:
+            if cn.number('location') > 0:
+                location = re.sub('\n', ' ', cn.value('location', row))
+                if location not in ['SAMPLE LOCATION']:
+                    in_summary = False
+            else:
+                cn.set_column_numbers({
+                    'location': ['SAMPLE LOCATION']
+                }, row)
+
+        if re.match('SUMMARY', row[0]):
+            cn = ColumnNumbers()            
+            in_summary = True
+            location = None
+
         if re.match('(?s).*Analysis Report.*Total Lead \(Pb\).*', row[0]):
             substance = 'Lead'
             result_attrs = {'substance': 'Lead'}
@@ -39,6 +56,9 @@ def main(file, original_filename, collection_date):
                                           cn.value('lab_methods', row)),
                     'collection_date': collection_date
                 }
+                if location:
+                    sample_attrs['location'] = location
+
                 samples_analyzed = re.sub('(?s).*Samples Analyzed: ([0-9]+).*', r'\1', cn.value('samples_analyzed', row))
                 if samples_analyzed:
                     samples_analyzed = int(samples_analyzed)
