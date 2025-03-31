@@ -29,6 +29,10 @@ def debug_cols(row, all=False):
 def is_empty(str):
     return str is None or str == ''
 
+def nonempty(str):
+    return not is_empty(str)
+
+
 def fill_elements(cols, element_map, result_map):
     i = 0
     while i < len(cols):
@@ -125,7 +129,22 @@ class ColumnNumbers:
         return self.cn.get(label) if self.cn.get(label) is not None else -1
 
     def value(self, label, row):
-        return row[self.number(label)] if self.number(label) >= 0 else ''
+        if self.number(label) >= 0 and row[self.number(label)]:
+            return row[self.number(label)]
+        else:
+            return ''
+
+    def values_for(self, labels, row, dest={}):
+        for label in labels:
+            if not is_empty(self.value(label, row)):
+                dest[label] = self.value(label, row)
+        return dest
+
+    def sample_values(self, row, dest={}):
+        return self.values_for(SampleFile.sample_headers, row, dest)
+
+    def result_values(self, row, dest={}):
+        return self.values_for(SampleFile.result_headers, row, dest)    
 
     def set(self, label, val):
         self.cn[label] = val

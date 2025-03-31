@@ -1,5 +1,5 @@
 import argparse
-from efru_util import SampleFile, Sample, Result, row_to_tokens, after_colon, debug_cols, is_empty, ColumnNumbers
+from efru_util import SampleFile, Sample, Result, row_to_tokens, after_colon, debug_cols, is_empty, ColumnNumbers, nonempty
 import csv
 import json
 import sys
@@ -63,7 +63,6 @@ def main(file, original_filename, collection_date):
                     'reporting_limit': ['Detection Limit.*'],
                     'measurement': ['Results.*']
                 }, row)
-                cn.set('sample_id', sample_id_col)
                 units = re.sub('Results *\((.*)\)', r'\1', cn.value('measurement', row))
 
             elif is_empty(cn.value('substance', row)) \
@@ -95,7 +94,7 @@ def main(file, original_filename, collection_date):
             if in_dust_header:
                 substance_col = SampleFile.find_column('.+', row)
                 if row[substance_col] and not row[substance_col].startswith('Sample') \
-                   and not is_empty(row[substance_col]):
+                   and nonempty(row[substance_col]):
                     result_attrs = {'substance': fix_substance(row[substance_col])}
                     cn.set('substance', substance_col)
 
@@ -118,12 +117,12 @@ def main(file, original_filename, collection_date):
                             units = fix_units(cn.value('sample_id', row))
                         
             else:
-                if cn.value('sample_id', row) and cn.value('reporting_limit', row):
+                if nonempty(cn.value('sample_id', row)) and nonempty(cn.value('reporting_limit', row)):
                     # Terrible hack - sometimes measurement is one column late
                     meas_col = cn.number('measurement')
-                    if not row[meas_col]:
+                    if is_empty(row[meas_col]):
                         meas_col = meas_col + 1
-                    if row[meas_col]:
+                    if nonempty(row[meas_col]):
                         (sample_id, location) = cn.value('sample_id', row).split('-', 1)
                         sample_id = normalize_sample_id(sample_id, collection_method)
                         sample = dust_samples.get(sample_id)
