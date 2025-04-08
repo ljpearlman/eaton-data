@@ -80,24 +80,6 @@ def main(host, catalog_id):
         ]
     ))
 
-    schema.create_table(Table.define(
-        "data_step",
-        [
-            Column.define("name", builtin_types.text, nullok=False),
-            Column.define("description", builtin_types.text, nullok=False),
-            Column.define("source_format", builtin_types.text, nullok=False),
-            Column.define("dest_format", builtin_types.text, nullok=False)
-        ],
-        key_defs = [
-            Key.define(["name"])
-        ],
-        fkey_defs = [
-            ForeignKey.define(
-                ["source_format"], "vocab", "file_format", ["name"]),
-            ForeignKey.define(
-                ["dest_format"], "vocab", "file_format", ["name"])
-        ]        
-    ))
 
     schema.create_table(Table.define(
         "data_method",
@@ -110,8 +92,31 @@ def main(host, catalog_id):
         ]
     ))
 
-    
+    schema.create_table(Table.define(
+        "location",
+        [
+            Column.define("name", builtin_types.text, nullok=False),
+            Column.define("description", builtin_types.text)
+        ],
+        key_defs = [
+            Key.define(["name"])
+        ]
+        ))
 
+    schema.create_table(Table.define(
+        "location_conversion",
+        [
+            Column.define("from_val", builtin_types.text, nullok=False),
+            Column.define("to_val", builtin_types.text, nullok=False),
+            Column.define("validated", builtin_types.boolean, nullok=False, default=False)
+        ],
+        key_defs = [
+            Key.define(["from_val"])
+        ],
+        fkey_defs = [
+            ForeignKey.define(["to_val"], "vocab", "location", ["RID"])
+        ]));
+    
 if __name__ == "__main__":
     cli=BaseCLI("Define structure table", None, 1, hostname_required=True, config_file_required=False)
     cli.parser.add_argument("--catalog-id", default="1")

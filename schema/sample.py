@@ -65,7 +65,8 @@ def main(host, catalog_id):
             Column.define("location", builtin_types.text),
             Column.define("analysis_method", builtin_types.text),
             Column.define("prep_method", builtin_types.text),
-            Column.define("collection_method", builtin_types.text)
+            Column.define("collection_method", builtin_types.text),
+            Column.define("raw_location", builtin_types.text)
         ],
         key_defs = [
             Key.define(["report_file", "sample_id"])
@@ -97,7 +98,7 @@ def main(host, catalog_id):
         fkey_defs = [
             ForeignKey.define(["sample"], "efru_data", "sample", ["RID"]),
             ForeignKey.define(["substance"], "vocab", "substance", ["name"]),
-            ForeignKey.define(["unit"], "vocab", "unit", ["name"])
+            ForeignKey.define(["unit"], "vocab", "unit", ["RID"])
             ]))
 
     schema.create_table(Table.define(
