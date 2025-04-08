@@ -19,6 +19,13 @@ def main(file, original_filename, collection_date):
     in_header = False
     cn = None
     units = None
+    svoc_stoplist = [
+        'pH',
+        'dissolved oxygen',
+        'temperature',
+        'residual chlorine',
+        'sulfite'
+    ]
     
     while True:
         try:

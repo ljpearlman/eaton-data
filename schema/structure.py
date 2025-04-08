@@ -73,11 +73,25 @@ def main(host, catalog_id):
             ForeignKey.define(
                 ["structure"], "efru_data", "structure", ["RID"]),
             ForeignKey.define(
-                ["testing_company"], "efru_data", "testing_company", ["name"]),
-            ForeignKey.define(
-                ["lab"], "efru_data", "lab", ["name"]),
+                ["testing_company"], "efru_data", "testing_company", ["name"])
             
             ]))
+
+    schema.create_table(Table.define(
+        "report_file_lab",
+        [
+            Column.define("report_file", builtin_types.text, nullok=False),
+            Column.define("lab", builtin_types.text, nullok=False)
+        ],
+        key_defs = [
+            Key.define(["report_file", "lab"])
+        ],
+        fkey_defs = [
+            ForeignKey.define(
+                ["report_file"], "efru_data", "report_file", ["RID"]),
+            ForeignKey.define(
+                ["lab"], "efru_data", "lab", ["name"]),
+        ]))
 
 if __name__ == "__main__":
     cli=BaseCLI("Define structure table", None, 1, hostname_required=True, config_file_required=False)
